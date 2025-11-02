@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Calm Focus</title>
+<style>
+  :root{
+    --bg:#f3f6f5;
+    --card:#ffffff;
+    --muted:#8a9a97;
+    --accent:#6aa29e;
+    --accent-2:#7aa9a6;
+    --shadow: 0 6px 18px rgba(34,44,43,0.08);
+    --glass: rgba(255,255,255,0.6);
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg),#e9f0ef);color:#0f2321}
+  .wrap{max-width:980px;margin:28px auto;padding:20px;display:grid;gap:18px;grid-template-columns:1fr 360px;}
+  @media (max-width:900px){.wrap{grid-template-columns:1fr; padding:12px}}
+  header{display:flex;align-items:center;gap:12px}
+  .logo{width:54px;height:54px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;box-shadow:var(--shadow);font-size:18px}
+  h1{margin:0;font-size:20px}
+  p.lead{margin:6px 0 0;color:var(--muted);font-size:13px}
+  .card{background:var(--card);border-radius:12px;padding:16px;box-shadow:var(--shadow);}
+  .big{padding:28px}
+  /* Breathing circle */
+  .breathArea{text-align:center}
+  .circle{width:180px;height:180px;border-radius:50%;margin:10px auto;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 40% 30%, rgba(106,162,158,0.12), rgba(106,162,158,0.03));transition:transform 1s ease, opacity .7s;box-shadow:0 6px 18px rgba(106,162,158,0.08)}
+  .circle-label{font-size:20px;color:var(--accent)}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+  button,select,input[type=number]{border:0;background:var(--accent);color:white;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+  button.secondary{background:transparent;color:var(--accent);border:1px solid rgba(106,162,158,0.15)}
+  .small{font-size:13px;padding:8px 10px}
+  label{display:block;margin-bottom:6px;color:var(--muted);font-size:13px}
+  .row{display:flex;gap:12px;align-items:center}
+  .meter{height:10px;background:linear-gradient(90deg,#e6efef,#f7fbfb);border-radius:999px;overflow:hidden}
+  .meter > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:0%}
+  /* Focus timer */
+  .timer-display{font-size:36px;font-weight:700;text-align:center;color:#0b2b28}
+  .task-input{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(15,35,33,0.06);font-size:14px}
+  .tiny{font-size:12px;color:var(--muted)}
+  footer.small{font-size:12px;color:var(--muted);text-align:center;padding-top:6px}
+  /* attention log */
+  .attentionBox{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center;justify-content:space-between}
+  .toggle{display:inline-flex;align-items:center;gap:8px}
+  .pill{background:#f0faf8;padding:6px 10px;border-radius:999px;color:var(--accent);font-weight:600}
+  .hidden{display:none}
+  /* focus helpers */
+  .tips{font-size:13px;color:var(--muted);line-height:1.4}
+  a.link{color:var(--accent);text-decoration:none;font-weight:600}
+</style>
+</head>
+<body>
+<main class="wrap" role="main">
+  <section>
+    <header>
+      <div class="logo" aria-hidden="true">CF</div>
+      <div>
+        <h1>Calm Focus</h1>
+        <p class="lead">Simple, evidence-aligned tools to reduce acute excitement and restore attention levels.</p>
+      </div>
+    </header>
+
+    <div class="card big" aria-labelledby="breathTitle">
+      <h2 id="breathTitle">Paced Breathing</h2>
+      <p class="tiny">Breathing slows the nervous system. Try the guided cycle below when you feel overstimulated.</p>
+
+      <div class="breathArea" id="breathArea">
+        <div id="circle" class="circle" aria-live="polite" aria-atomic="true">
+          <div class="circle-label" id="circleLabel">Ready</div>
+        </div>
+
+        <div class="controls" role="group" aria-label="breathing controls">
+          <label class="tiny" style="margin-right:6px">Preset</label>
+          <select id="preset">
+            <option value="box">4-4-4 Box</option>
+            <option value="relax">4-6-8 Relax</option>
+            <option value="short">3-3-3 Quick</option>
+          </select>
+
+          <button id="startBreath" class="small">Start</button>
+          <button id="stopBreath" class="small secondary">Stop</button>
+
+          <div style="margin-left:8px" class="tiny">Cycles:
+            <input id="cycles" type="number" min="1" max="20" value="6" style="width:64px;padding:6px;border-radius:6px;border:1px solid rgba(15,35,33,0.06)" />
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="row">
+          <div style="flex:1">
+            <label class="tiny">Progress</label>
+            <div class="meter" aria-hidden="true">
+              <i id="breathProg" style="width:0%"></i>
+            </div>
+          </div>
+          <div style="width:120px;text-align:right">
+            <div class="tiny">State</div>
+            <div id="statePill" class="pill">Calm</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" aria-labelledby="focusTitle">
+      <h2 id="focusTitle">Focus Timer</h2>
+      <p class="tiny">Set a single task and run a focused interval. Use the breathing tool when alerted as distracted.</p>
+
+      <label class="tiny">Task</label>
+      <input id="task" class="task-input" placeholder="Write one sentence, study a problem, or read a paragraph" />
+
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+        <div>
+          <label class="tiny">Minutes</label>
+          <input id="minutes" type="number" min="5" max="120" value="25" style="width:88px;padding:8px;border-radius:8px;border:1px solid rgba(15,35,33,0.06)" />
+        </div>
+        <div style="flex:1">
+          <label class="tiny">&nbsp;</label>
+          <div style="display:flex;gap:8px">
+            <button id="startTimer" class="small">Start</button>
+            <button id="pauseTimer" class="small secondary">Pause</button>
+            <button id="resetTimer" class="small secondary">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;text-align:center">
+        <div id="timeDisplay" class="timer-display">25:00</div>
+        <div class="tiny">Round <span id="roundCount">0</span> • Completed <span id="completedCount">0</span></div>
+      </div>
+
+      <div style="margin-top:12px" class="row">
+        <div style="flex:1">
+          <label class="tiny">Ambient sound</label>
+          <div class="toggle">
+            <button id="toggleSound" class="small secondary">Off</button>
+            <label class="tiny" style="margin-left:8px">Volume</label>
+            <input id="volume" type="range" min="0" max="1" step="0.01" value="0.15" aria-label="ambient volume" />
+          </div>
+        </div>
+        <div style="width:160px;text-align:right">
+          <label class="tiny">Auto-breathe on distract</label>
+          <div><input id="autoBreathe" type="checkbox" checked /> <span class="tiny">Enabled</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" aria-labelledby="attentionTitle">
+      <h2 id="attentionTitle">Attention Meter</h2>
+      <p class="tiny">Nonmedical pacing feedback. The meter watches motion, window focus, and typing. High movement or frequent tab switches increases the distraction score. Use breathing when score rises.</p>
+
+      <div style="display:flex;gap:12px;align-items:center;margin-top:10px">
+        <div style="flex:1">
+          <label class="tiny">Distraction</label>
+          <div class="meter" aria-hidden="true"><i id="distractBar" style="width:4%"></i></div>
+        </div>
+        <div style="width:120px;text-align:right"><div class="tiny">Score <strong id="distractScore">4</strong>/100</div></div>
+      </div>
+
+      <div style="margin-top:12px" class="attentionBox">
+        <div>
+          <div class="tiny">Recent events</div>
+          <ul id="events" style="margin:6px 0 0;padding-left:18px;color:var(--muted);font-size:13px"></ul>
+        </div>
+        <div style="text-align:right">
+          <button id="clearLog" class="small secondary">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" aria-labelledby="tipsTitle">
+      <h2 id="tipsTitle">Quick Tips</h2>
+      <ul class="tips">
+        <li>When distracted, drop to a 4-6-8 breathing cycle for 2–6 rounds. That often lowers arousal quickly.</li>
+        <li>Single-task: choose one tiny next action. Make the timer short (15–25 minutes) and fully commit.</li>
+        <li>Minimize devices and close tabs. The attention meter will notice frequent context switches.</li>
+      </ul>
+    </div>
+
+    <footer class="card small" style="margin-top:12px">
+      <div>Built for calm and focus. This tool stores small local settings in your browser only.</div>
+    </footer>
+  </section>
+
+  <!-- right column -->
+  <aside>
+    <div class="card" aria-labelledby="statusTitle">
+      <h2 id="statusTitle">Current State</h2>
+      <div style="margin-top:8px">
+        <div class="tiny">Breathing</div>
+        <div id="breathState" class="tiny" style="margin-bottom:8px">Idle</div>
+
+        <div class="tiny">Focus session</div>
+        <div id="sessionState" class="tiny">Idle</div>
+
+        <div style="margin-top:10px" class="tiny">Local stats</div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <div class="pill" id="todayBreaths">Breaths 0</div>
+          <div class="pill" id="todayFocus">Focus 0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px" aria-labelledby="historyTitle">
+      <h2 id="historyTitle">Session History</h2>
+      <div style="margin-top:8px;font-size:13px;color:var(--muted)">
+        <ol id="historyList" style="padding-left:18px;margin:6px 0 0"></ol>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px" aria-labelledby="accessTitle">
+      <h2 id="accessTitle">Accessibility</h2>
+      <p class="tiny">All controls are keyboard accessible. Start breathing with Enter on the Start button. ARIA live regions announce state changes.</p>
+      <p class="tiny">If sound is uncomfortable, keep it off. Visual cues and timers suffice.</p>
+    </div>
+  </aside>
+</main>
+
+<script>
+/*
+  Calm Focus: breathing guide + focus timer + simple attention meter + ambient sound
+  - No external resources
+  - Saves small stats into localStorage
+  - Nonmedical. Behavioral support only.
+*/
+
+/* ---------- Utilities ---------- */
+const $ = sel => document.querySelector(sel);
+const el = id => document.getElementById(id);
+function formatTime(s){ const mm = Math.floor(s/60).toString().padStart(2,'0'); const ss = (s%60).toString().padStart(2,'0'); return mm+':'+ss; }
+
+/* ---------- Breathing ---------- */
+let breathTimer = null;
+let breathRunning = false;
+let audioCtx = null;
+
+const presets = {
+  box: {inhale:4, hold:4, exhale:4},
+  relax: {inhale:4, hold:6, exhale:8},
+  short: {inhale:3, hold:3, exhale:3}
+};
+
+function startBreathing(presetKey, cycles){
+  if(breathRunning) return;
+  breathRunning = true;
+  el('startBreath').disabled = true;
+  el('stopBreath').disabled = false;
+  el('statePill').textContent = 'Breathing';
+  el('breathState').textContent = 'Active';
+  const p = presets[presetKey] || presets.box;
+  let cycleCount = 0;
+  let stage = 'inhale';
+  let stageLeft = p.inhale;
+  const totalStages = cycles * (p.inhale + p.hold + p.exhale);
+  let progressed = 0;
+
+  const circle = el('circle');
+  const label = el('circleLabel');
+  const prog = el('breathProg');
+
+  function step(){
+    if(!breathRunning) return;
+    label.textContent = stage.charAt(0).toUpperCase() + stage.slice(1) + ' ' + stageLeft;
+    // visual expansion for inhale, contraction for exhale
+    if(stage === 'inhale') circle.style.transform = 'scale(1.12)';
+    else if(stage === 'hold') circle.style.transform = 'scale(1.04)';
+    else if(stage === 'exhale') circle.style.transform = 'scale(0.88)';
+    // light tone on transitions
+    if(audioCtx) playBeep(220 + (stage === 'exhale' ? -40 : 0), 0.06);
+
+    stageLeft--;
+    progressed++;
+    prog.style.width = Math.round((progressed / totalStages) * 100) + '%';
+
+    if(stageLeft <= 0){
+      if(stage === 'inhale') { stage = 'hold'; stageLeft = p.hold; }
+      else if(stage === 'hold') { stage = 'exhale'; stageLeft = p.exhale; }
+      else if(stage === 'exhale') {
+        cycleCount++;
+        if(cycleCount >= cycles){
+          stopBreathing();
+          return;
+        }
+        stage = 'inhale'; stageLeft = p.inhale;
+      }
+    }
+    breathTimer = setTimeout(step, 1000);
+  }
+  step();
+  // track quick stat
+  incrementToday('todayBreaths');
+}
+
+function stopBreathing(){
+  breathRunning = false;
+  el('startBreath').disabled = false;
+  el('stopBreath').disabled = true;
+  el('circleLabel').textContent = 'Ready';
+  el('circle').style.transform = 'scale(1)';
+  el('breathProg').style.width = '0%';
+  el('statePill').textContent = 'Calm';
+  el('breathState').textContent = 'Idle';
+  clearTimeout(breathTimer);
+}
+
+/* ---------- Focus Timer (Pomodoro-like) ---------- */
+let focusIntervalId = null;
+let focusRemaining = 0;
+let focusRunning = false;
+let focusCompleted = 0;
+
+function startFocus(){
+  if(focusRunning) return;
+  const mins = Math.max(1, parseInt(el('minutes').value || 25));
+  focusRemaining = mins * 60;
+  focusRunning = true;
+  el('sessionState').textContent = 'Running';
+  el('startTimer').disabled = true;
+  el('pauseTimer').disabled = false;
+  focusTick();
+  // increment round count visually
+  el('roundCount').textContent = parseInt(el('roundCount').textContent || 0) + 1;
+  incrementToday('todayFocus');
+}
+
+function focusTick(){
+  el('timeDisplay').textContent = formatTime(focusRemaining);
+  if(focusRemaining <= 0){
+    focusCompleted++;
+    el('completedCount').textContent = focusCompleted;
+    finishFocus();
+    return;
+  }
+  focusRemaining--;
+  focusIntervalId = setTimeout(focusTick, 1000);
+  // If attention score high and auto breathe enabled, nudge user
+  const auto = el('autoBreathe').checked;
+  if(auto && getDistractScore() > 50 && !breathRunning) {
+    // start a short calming breath automatically (4-6-8, 3 cycles)
+    startBreathing('relax', 3);
+  }
+}
+
+function pauseFocus(){
+  if(!focusRunning) return;
+  focusRunning = false;
+  clearTimeout(focusIntervalId);
+  el('sessionState').textContent = 'Paused';
+  el('startTimer').disabled = false;
+  el('pauseTimer').disabled = true;
+}
+
+function resetFocus(){
+  pauseFocus();
+  const mins = Math.max(1, parseInt(el('minutes').value || 25));
+  focusRemaining = mins * 60;
+  el('timeDisplay').textContent = formatTime(focusRemaining);
+  el('sessionState').textContent = 'Idle';
+}
+
+function finishFocus(){
+  focusRunning = false;
+  clearTimeout(focusIntervalId);
+  el('sessionState').textContent = 'Finished';
+  el('startTimer').disabled = false;
+  el('pauseTimer').disabled = true;
+  logHistory(`Focus completed: ${el('task').value || 'Unnamed task'} (${el('minutes').value}m)`);
+  // play gentle chime
+  if(audioCtx) playBeep(440, 0.18);
+}
+
+/* ---------- Attention Meter (behavioral) ---------- */
+let motionCount = 0;
+let lastVisible = true;
+let tabSwitches = 0;
+const eventsList = el('events');
+
+function addEvent(text){
+  const li = document.createElement('li');
+  li.textContent = text;
+  eventsList.prepend(li);
+  // keep only last 12
+  while(eventsList.children.length > 12) eventsList.removeChild(eventsList.lastChild);
+}
+
+function updateDistractBar(){
+  const score = getDistractScore();
+  el('distractBar').style.width = Math.min(100, Math.max(0, score)) + '%';
+  el('distractScore').textContent = Math.round(score);
+  if(score > 60){
+    el('statePill').textContent = 'Distracted';
+  } else if(score > 30){
+    el('statePill').textContent = 'Alert';
+  } else {
+    el('statePill').textContent = 'Calm';
+  }
+}
+
+function getDistractScore(){
+  // composite score: motion + tab switches + typing frequency (simplified)
+  // normalized to 0-100
+  const motion = Math.min(100, motionCount * 10);
+  const tab = Math.min(100, tabSwitches * 10);
+  // typing: recent keypresses reduce score (engaged)
+  const typing = Math.max(0, Math.min(100, (100 - (typingCounter || 0)))); // fewer keypresses => higher subscore
+  const score = motion * 0.6 + tab * 0.25 + typing * 0.15;
+  return Math.round(Math.min(100, score));
+}
+
+// motion detection: large mouse movement increments motionCount
+let lastMouse = {x:0,y:0};
+window.addEventListener('mousemove', e => {
+  const dx = Math.abs(e.clientX - lastMouse.x);
+  const dy = Math.abs(e.clientY - lastMouse.y);
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  if(dist > 30) {
+    motionCount++;
+    addEvent(`Large mouse move (${Math.round(dist)})`);
+  }
+  lastMouse = {x:e.clientX,y:e.clientY};
+});
+let typingCounter = 0;
+window.addEventListener('keydown', e => {
+  typingCounter = Math.min(100, typingCounter + 3);
+});
+window.addEventListener('visibilitychange', () => {
+  if(document.hidden){ lastVisible = false; addEvent('Tab hidden'); tabSwitches++; }
+  else { if(!lastVisible) addEvent('Returned to tab'); lastVisible = true; }
+});
+
+// periodic decay of counters
+setInterval(()=>{
+  motionCount = Math.max(0, motionCount - 0.12);
+  tabSwitches = Math.max(0, tabSwitches - 0.02);
+  typingCounter = Math.max(0, typingCounter - 1);
+  updateDistractBar();
+}, 800);
+
+/* ---------- Local history / stats ---------- */
+function logHistory(text){
+  const li = document.createElement('li');
+  const ts = new Date().toLocaleTimeString();
+  li.textContent = `${ts} — ${text}`;
+  el('historyList').prepend(li);
+  while(el('historyList').children.length > 18) el('historyList').removeChild(el('historyList').lastChild);
+}
+
+function incrementToday(key){
+  const current = parseInt(localStorage.getItem(key) || '0');
+  localStorage.setItem(key, current + 1);
+  el(key).textContent = (key === 'todayBreaths' ? 'Breaths ' : 'Focus ') + (current + 1);
+}
+
+/* ---------- Ambient sound: gentle noise or slow oscillator ---------- */
+let ambientNode = null;
+let noiseNode = null;
+let gainNode = null;
+function ensureAudio(){
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if(!gainNode){ gainNode = audioCtx.createGain(); gainNode.gain.value = parseFloat(el('volume').value); gainNode.connect(audioCtx.destination); }
+}
+
+function startAmbient(){
+  ensureAudio();
+  if(ambientNode) return;
+  // create gentle pink-ish noise using buffer
+  const bufferSize = 2 * audioCtx.sampleRate;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * 0.2; // low amplitude
+  }
+  noiseNode = audioCtx.createBufferSource();
+  noiseNode.buffer = buffer;
+  noiseNode.loop = true;
+
+  // gentle filter to make it soft
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 1200;
+
+  noiseNode.connect(filter);
+  filter.connect(gainNode);
+  noiseNode.start();
+  ambientNode = noiseNode;
+  el('toggleSound').textContent = 'On';
+}
+
+function stopAmbient(){
+  if(noiseNode){ try{ noiseNode.stop(); }catch(e){} noiseNode.disconnect(); noiseNode = null;}
+  ambientNode = null;
+  el('toggleSound').textContent = 'Off';
+}
+
+el('toggleSound').addEventListener('click', e=>{
+  if(!audioCtx || !ambientNode) startAmbient();
+  else stopAmbient();
+});
+el('volume').addEventListener('input', e=>{
+  if(!gainNode) return;
+  gainNode.gain.value = parseFloat(e.target.value);
+});
+
+/* small beep util */
+function playBeep(freq = 440, duration = 0.08){
+  try{
+    ensureAudio();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'sine';
+    o.frequency.value = freq;
+    g.gain.value = 0.0001;
+    o.connect(g); g.connect(gainNode);
+    const now = audioCtx.currentTime;
+    g.gain.linearRampToValueAtTime(0.12, now + 0.01);
+    o.start(now);
+    g.gain.exponentialRampToValueAtTime(0.00001, now + duration);
+    o.stop(now + duration + 0.02);
+  }catch(e){
+    // audio failed, ignore
+  }
+}
+
+/* ---------- Hook controls ---------- */
+el('startBreath').addEventListener('click', () => {
+  const preset = el('preset').value;
+  const cycles = Math.max(1, Math.min(20, parseInt(el('cycles').value || 6)));
+  startBreathing(preset, cycles);
+});
+el('stopBreath').addEventListener('click', stopBreathing);
+el('stopBreath').disabled = true;
+
+el('startTimer').addEventListener('click', startFocus);
+el('pauseTimer').addEventListener('click', pauseFocus);
+el('resetTimer').addEventListener('click', resetFocus);
+
+el('clearLog').addEventListener('click', ()=>{ eventsList.innerHTML=''; tabSwitches=0; motionCount=0; addEvent('Log cleared'); });
+
+el('minutes').addEventListener('change', () => {
+  resetFocus();
+});
+el('preset').addEventListener('change', () => { /* placeholder */ });
+
+/* ---------- Initialize UI ---------- */
+(function init(){
+  // set initial time display
+  el('timeDisplay').textContent = formatTime(parseInt(el('minutes').value || 25) * 60);
+  const breaths = parseInt(localStorage.getItem('todayBreaths') || '0');
+  const focus = parseInt(localStorage.getItem('todayFocus') || '0');
+  el('todayBreaths').textContent = 'Breaths ' + breaths;
+  el('todayFocus').textContent = 'Focus ' + focus;
+  // announce small tagline for screen readers
+  el('circle').setAttribute('role','status');
+  el('circle').setAttribute('aria-live','polite');
+
+  // gentle periodic log of engagement
+  setInterval(()=> {
+    const score = getDistractScore();
+    if(score > 60) {
+      addEvent('High distraction detected');
+    } else if(score > 30) {
+      addEvent('Mild distraction');
+    }
+  }, 16000);
+
+  // accessibility keyboard shortcuts
+  document.addEventListener('keydown', e=>{
+    if(e.key === 'b') { el('startBreath').focus(); el('startBreath').click(); }
+    if(e.key === 'p') { el('startTimer').click(); }
+    if(e.key === ' ') {
+      // prevent scroll toggle for space when focusing buttons
+      if(document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        if(focusRunning) pauseFocus(); else startFocus();
+      }
+    }
+  });
+})();
+
+</script>
+</body>
+</html>
