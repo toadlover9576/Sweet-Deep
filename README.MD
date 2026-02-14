@@ -8,8 +8,8 @@ What It Is:
 -Helps users get things done in a timely manner when they think of it
 
 Features:
--Small task organizer with degrees (Urgent, Critical, Normal)
--Physiological Sighs for McCollough research-based focus restoration
+-Quick-Hit task organizer with degrees (Urgent, Critical, Standard)
+-4 Breathing modes for McCollough research-based focus restoration (box, 4‑7‑8, resonant, energizing) 
 -Focus Timer: Set it for how long you need to lock in on something you want to do
 -Focus Meter: Measures pixel count, time variables, cursor movement, and feature usage to determine your focus
 -Session Log: Shows when you began using Sweet Deep and completed tasks and focus timer so you can see quick snippets of progress
